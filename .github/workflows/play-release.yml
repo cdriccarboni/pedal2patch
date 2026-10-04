@@ -1,0 +1,22 @@
+name: Pedal2Patch Play Release
+on:
+  workflow_dispatch:
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npx cap add android
+      - run: npx cap sync android
+      - name: Stop before signing until owner-provided Play credentials exist
+        run: |
+          echo "Play release pipeline scaffolded."
+          echo "Required secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+          echo "No credentials are generated or guessed by this workflow."
