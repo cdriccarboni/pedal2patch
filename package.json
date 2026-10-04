@@ -1,0 +1,8 @@
+{
+  "name": "pedal2patch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pedal2Patch — Guitar to Console Professional Engine",
+  "license": "UNLICENSED",
+  "scripts": {"test":"node --test","check":"node --check app.js"}
+}
