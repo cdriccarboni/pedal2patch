@@ -5,7 +5,9 @@
   "type": "module",
   "description": "Pedal2Patch — Guitar to Console Professional Engine",
   "license": "UNLICENSED",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test",
     "check": "node --check app.js",
@@ -17,6 +19,7 @@
     "@capacitor/android": "^7.4.3"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3"
+    "@capacitor/cli": "^7.4.3",
+    "typescript": "^5.9.2"
   }
 }
