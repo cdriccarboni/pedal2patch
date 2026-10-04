@@ -12,7 +12,8 @@
     "test": "node --test",
     "check": "node --check app.js",
     "cap:sync": "npx cap sync",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "cap:prepare": "rm -rf www && mkdir -p www && cp index.html app.js styles.css manifest.webmanifest sw.js icon-192.svg icon-512.svg www/"
   },
   "dependencies": {
     "@capacitor/core": "^7.4.3",
