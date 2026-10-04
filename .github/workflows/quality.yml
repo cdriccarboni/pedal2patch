@@ -11,9 +11,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm install
       - name: Syntax check
-        run: node --check app.js
-      - name: Smoke test
+        run: npm run check
+      - name: Smoke tests
+        run: npm test
+      - name: Static asset check
         run: |
           test -f index.html
           test -f manifest.webmanifest
