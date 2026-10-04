@@ -1,5 +1,14 @@
 {
-  "name":"Pedal2Patch","short_name":"Pedal2Patch",
-  "description":"Transforme ton pedalboard en patch console pro.",
-  "start_url":"./","display":"standalone","background_color":"#080b10","theme_color":"#080b10","lang":"fr","icons":[]
+  "name": "Pedal2Patch",
+  "short_name": "Pedal2Patch",
+  "description": "Transforme ton pedalboard en patch console pro.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080b10",
+  "theme_color": "#080b10",
+  "lang": "fr",
+  "icons": [
+    { "src": "./icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "./icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
 }
