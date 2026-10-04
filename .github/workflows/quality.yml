@@ -1,0 +1,21 @@
+name: Pedal2Patch Quality
+on:
+  push:
+    branches: ["main","develop","release/**"]
+  pull_request:
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Syntax check
+        run: node --check app.js
+      - name: Smoke test
+        run: |
+          test -f index.html
+          test -f manifest.webmanifest
+          test -f sw.js
+          grep -q "PEDAL2PATCH" index.html
