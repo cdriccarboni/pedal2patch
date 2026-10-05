@@ -1,6 +1,6 @@
 {
   "name": "pedal2patch",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Pedal2Patch — Guitar to Console Professional Engine",
@@ -13,14 +13,18 @@
     "check": "node --check app.js",
     "cap:sync": "npx cap sync",
     "android:open": "npx cap open android",
-    "cap:prepare": "rm -rf www && mkdir -p www && cp index.html app.js styles.css manifest.webmanifest sw.js icon-192.svg icon-512.svg www/"
+    "cap:prepare": "node scripts/prepare-web.mjs",
+    "android:configure": "node scripts/configure-android.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^7.4.3",
-    "@capacitor/android": "^7.4.3"
+    "@capacitor/android": "^7.4.3",
+    "@capacitor-community/admob": "7",
+    "@capgo/native-purchases": "7"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
+    "esbuild": "^0.25.0",
     "typescript": "^5.9.2"
   }
 }

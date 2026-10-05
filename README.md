@@ -14,30 +14,41 @@ Pedal2Patch transforme une chaîne de pédales guitare en point de départ de pa
 - export JSON
 - fiche régie/FOH
 - tap tempo, calcul mA, A4 440 Hz
-- Capacitor Android scaffold
-- GitHub Actions de contrôle et build APK debug
+- Capacitor Android 7
+- GitHub Actions : APK debug sur `main`, AAB release sur `release/play`
+- publication Google Play automatisable vers internal / alpha / beta / production
 
 ## Limites actuelles
 La version actuelle ne prétend pas faire de reconnaissance IA de pédales ni d'envoi réel UDP/OSC vers une console : ces intégrations doivent être implémentées et testées avant d'être présentées comme fonctionnelles.
 
-Le Mac de développement n'étant pas connecté à l'outil d'exécution au moment de l'amorçage, le build Gradle local et la signature Play n'ont pas été déclarés comme vérifiés.
-
 ## Publication Google Play
-Identifiant Android préparé : fr.cedriccarboni.pedal2patch.
+Identifiant Android : `fr.cedriccarboni.pedal2patch`.
 
-Pour un AAB de production, il faut fournir au dépôt de secrets du dépôt GitHub :
-- ANDROID_KEYSTORE_BASE64
-- ANDROID_KEYSTORE_PASSWORD
-- ANDROID_KEY_ALIAS
-- ANDROID_KEY_PASSWORD
-- GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+Branche de publication : `release/play`.
 
-Ces secrets ne doivent jamais être commités dans Git.
+Secrets GitHub attendus :
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+- `ADMOB_APP_ID`
+- `ADMOB_BANNER_ID`
 
-La création de la fiche application Play Console et l'autorisation de publication nécessitent le compte Google Play du propriétaire. Aucune identité, clé ou projet n'est inventé ici.
+Le workflow `.github/workflows/android.yml` produit toujours l'AAB signé. L'envoi Play est déclenché manuellement via `workflow_dispatch` avec le track et le statut voulus.
 
-## Monétisation prévue
-Modèle gratuit avec publicité et déblocage payant de la version sans publicité, à implémenter après QA et conformité Play.
+## Monétisation
+Modèle : application gratuite avec publicité + achat unique à vie pour retirer la publicité, sans abonnement.
+
+Produit Google Play attendu : `remove_ads_lifetime`.
+
+- AdMob : `@capacitor-community/admob@7`
+- achat unique : `@capgo/native-purchases@7`
+- consentement publicitaire via le SDK UMP du plugin AdMob
+- restauration d'achat incluse
+- prix chargé depuis Google Play, jamais codé en dur
+- la PWA web reste sans publicité
+- si les IDs AdMob de production ne sont pas configurés, le build utilise les IDs de test officiels Google
 
 ## Licence
 Code et assets propriétaires, sauf mention contraire.
