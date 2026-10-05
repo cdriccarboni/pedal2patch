@@ -35,7 +35,11 @@ function setPriceLabel() {
 
 function isOwnedTransaction(purchase) {
   if (!purchase || purchase.productIdentifier !== REMOVE_ADS_PRODUCT_ID) return false;
-  const stateOk = !purchase.purchaseState || purchase.purchaseState === "PURCHASED";
+  const stateOk =
+    !purchase.purchaseState ||
+    purchase.purchaseState === "PURCHASED" ||
+    purchase.purchaseState === "1" ||
+    purchase.purchaseState === 1;
   const ackOk = purchase.isAcknowledged !== false;
   return stateOk && ackOk;
 }
@@ -126,6 +130,15 @@ async function buyRemoveAds() {
   }
 }
 
+async function showPrivacyOptions() {
+  try {
+    await AdMob.showPrivacyOptionsForm();
+    setStatus("Préférences de confidentialité mises à jour.");
+  } catch {
+    setStatus("Options de confidentialité indisponibles pour le moment.");
+  }
+}
+
 async function restorePurchase() {
   try {
     await NativePurchases.restorePurchases();
@@ -140,6 +153,7 @@ async function init() {
   if (!Capacitor.isNativePlatform()) return;
   byId("removeAdsButton")?.addEventListener("click", buyRemoveAds);
   byId("restoreAdsPurchaseButton")?.addEventListener("click", restorePurchase);
+  byId("adsPrivacyButton")?.addEventListener("click", showPrivacyOptions);
   await refreshEntitlement();
   await loadProduct();
   await startAds();
