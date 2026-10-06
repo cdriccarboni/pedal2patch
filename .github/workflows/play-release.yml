@@ -1,22 +1,145 @@
 name: Pedal2Patch Play Release
+
 on:
   workflow_dispatch:
+    inputs:
+      publish_to_play:
+        description: "Publier l'AAB signé sur Google Play"
+        required: true
+        type: boolean
+        default: false
+      track:
+        description: "Canal Google Play"
+        required: true
+        type: choice
+        default: internal
+        options: [internal, alpha, beta]
+
+permissions:
+  contents: read
+
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    env:
+      PACKAGE_NAME: "fr.cedriccarboni.pedal2patch"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npm run cap:prepare
-      - run: npx cap add android
-      - run: npx cap sync android
-      - name: Stop before signing until owner-provided Play credentials exist
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install and prepare
         run: |
-          echo "Play release pipeline scaffolded."
-          echo "Required secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
-          echo "No credentials are generated or guessed by this workflow."
+          npm install
+          npm run check
+          npm test
+          npm run cap:prepare
+          npx cap add android
+          npx cap sync android
+          VERSION="$(node -p "require('./package.json').version")"
+          export VERSION
+          python - <<'PY'
+          import os,re
+          from pathlib import Path
+          version=os.environ["VERSION"]
+          major,minor,patch=(int(x) for x in version.split(".")[:3])
+          code=major*10000+minor*100+patch
+          p=Path("android/app/build.gradle")
+          s=p.read_text()
+          s=re.sub(r'versionCode\s+\d+',f'versionCode {code}',s,count=1)
+          s=re.sub(r'versionName\s+"[^"]+"',f'versionName "{version}"',s,count=1)
+          p.write_text(s)
+          PY
+
+      - name: Build unsigned release AAB
+        working-directory: android
+        run: ./gradlew --no-daemon bundleRelease
+
+      - name: Detect Play signing configuration
+        id: signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Clé Play Pedal2Patch absente : AAB non signé uniquement."
+            exit 0
+          fi
+          STORE="$RUNNER_TEMP/pedal2patch-upload.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$STORE"
+          keytool -list -keystore "$STORE" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          echo "KEYSTORE=$STORE" >> "$GITHUB_ENV"
+          echo "available=true" >> "$GITHUB_OUTPUT"
+
+      - name: Sign Play AAB
+        if: steps.signing.outputs.available == 'true'
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          SRC="android/app/build/outputs/bundle/release/app-release.aab"
+          DEST="$RUNNER_TEMP/Pedal2Patch-$VERSION-play.aab"
+          cp "$SRC" "$DEST"
+          jarsigner -keystore "$KEYSTORE" -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" -sigalg SHA256withRSA -digestalg SHA-256 "$DEST" "$KEY_ALIAS"
+          jarsigner -verify -strict "$DEST" >/dev/null
+          echo "SIGNED_AAB=$DEST" >> "$GITHUB_ENV"
+
+      - name: Require credentials for publishing
+        if: ${{ inputs.publish_to_play }}
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          test "${{ steps.signing.outputs.available }}" = "true"
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+
+      - name: Publish signed AAB to Google Play
+        if: ${{ inputs.publish_to_play }}
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: ${{ inputs.track }}
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --quiet google-api-python-client google-auth
+          CREDENTIALS="$RUNNER_TEMP/play.json"
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$CREDENTIALS"
+          export APP_VERSION="$(node -p "require('./package.json').version")"
+          export CREDENTIALS
+          python - <<'PY'
+          import os
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaFileUpload
+          creds=service_account.Credentials.from_service_account_file(
+              os.environ["CREDENTIALS"],
+              scopes=["https://www.googleapis.com/auth/androidpublisher"],
+          )
+          service=build("androidpublisher","v3",credentials=creds,cache_discovery=False)
+          package=os.environ["PACKAGE_NAME"]
+          edit=service.edits().insert(packageName=package,body={}).execute()
+          eid=edit["id"]
+          bundle=service.edits().bundles().upload(
+              packageName=package,editId=eid,
+              media_body=MediaFileUpload(os.environ["SIGNED_AAB"],mimetype="application/octet-stream",resumable=True),
+          ).execute()
+          code=str(bundle["versionCode"])
+          track=os.environ["PLAY_TRACK"]
+          service.edits().tracks().update(
+              packageName=package,editId=eid,track=track,
+              body={"track":track,"releases":[{"name":f"Pedal2Patch {os.environ['APP_VERSION']}","versionCodes":[code],"status":"completed"}]},
+          ).execute()
+          service.edits().commit(packageName=package,editId=eid).execute()
+          print(f"Published {package} versionCode={code} track={track}")
+          PY

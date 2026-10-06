@@ -1,6 +1,6 @@
 {
   "name": "pedal2patch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Pedal2Patch — Guitar to Console Professional Engine",
