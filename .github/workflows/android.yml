@@ -58,7 +58,6 @@ jobs:
           name: Pedal2Patch-Android-${{ github.sha }}
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
-            android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Publish GitHub test release
@@ -71,11 +70,9 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           TAG="v$VERSION-test"
           APK_SRC="android/app/build/outputs/apk/debug/app-debug.apk"
-          AAB_SRC="android/app/build/outputs/bundle/release/app-release.aab"
           cp "$APK_SRC" "/tmp/Pedal2Patch-$VERSION-TEST.apk"
-          cp "$AAB_SRC" "/tmp/Pedal2Patch-$VERSION-unsigned.aab"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "/tmp/Pedal2Patch-$VERSION-TEST.apk" "/tmp/Pedal2Patch-$VERSION-unsigned.aab" --clobber
+            gh release upload "$TAG" "/tmp/Pedal2Patch-$VERSION-TEST.apk" --clobber
           else
-            gh release create "$TAG"               "/tmp/Pedal2Patch-$VERSION-TEST.apk"               "/tmp/Pedal2Patch-$VERSION-unsigned.aab"               --prerelease               --title "Pedal2Patch $VERSION — Android TEST"               --notes "APK de test + AAB non signé produits après syntax check, tests et build Capacitor."
+            gh release create "$TAG"               "/tmp/Pedal2Patch-$VERSION-TEST.apk"               --prerelease               --title "Pedal2Patch $VERSION — Android TEST"               --notes "APK de test produit après syntax check, tests et build Capacitor. AAB non signé compilé mais non diffusé publiquement."
           fi
