@@ -2,6 +2,8 @@ name: Pedal2Patch Android
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: ["main"]
   push:
     branches: ["main"]
     tags: ["v*"]
@@ -73,9 +75,8 @@ jobs:
           APK_SRC="android/app/build/outputs/apk/debug/app-debug.apk"
           AAB_SRC="android/app/build/outputs/bundle/release/app-release.aab"
           cp "$APK_SRC" "/tmp/Pedal2Patch-$VERSION-TEST.apk"
-          cp "$AAB_SRC" "/tmp/Pedal2Patch-$VERSION-unsigned.aab"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "/tmp/Pedal2Patch-$VERSION-TEST.apk" "/tmp/Pedal2Patch-$VERSION-unsigned.aab" --clobber
+            gh release upload "$TAG" "/tmp/Pedal2Patch-$VERSION-TEST.apk" --clobber
           else
-            gh release create "$TAG"               "/tmp/Pedal2Patch-$VERSION-TEST.apk"               "/tmp/Pedal2Patch-$VERSION-unsigned.aab"               --prerelease               --title "Pedal2Patch $VERSION — Android TEST"               --notes "APK de test + AAB non signé produits après syntax check, tests et build Capacitor."
+            gh release create "$TAG"               "/tmp/Pedal2Patch-$VERSION-TEST.apk"               --prerelease               --title "Pedal2Patch $VERSION — Android TEST"               --notes "APK de test après syntax check, tests et build Capacitor. Les AAB restent uniquement dans les artefacts de CI et ne sont jamais publiés comme fichiers de release."
           fi
