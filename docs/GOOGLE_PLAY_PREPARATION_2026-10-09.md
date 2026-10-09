@@ -48,6 +48,13 @@ Les fonctions exactes énumérées pour la mise en vente doivent correspondre à
 - VersionCode strictement supérieur au dernier Play accepté ; ne pas réutiliser le code 10001 si déjà soumis.
 - Play Console : créer / retrouver la fiche existante avec package exact et prix **payant**, compléter déclarations, télécharger seulement l'AAB signé sur **Tests internes**, vérifier acceptation avant toute phrase "Publié sur Play".
 
+## Critère de livraison exigé : installation Google Play réelle
+Le livrable attendu après développement **n'est pas uniquement une prévisualisation AI Studio**, un ZIP, un APK ou un fichier AAB. Le but est un **canal Tests internes Google Play accepté** contenant la nouvelle build, et un **vrai lien d'inscription/installation Google Play** validé sur le téléphone du propriétaire. Préparer aussi le lien d'inscription pour la cohorte des bêta-testeurs fermés. Ne jamais prétendre à une publication achevée sans vérification effective du canal et du lien.
+
+Un test interne peut accueillir jusqu'à 100 testeurs ; les testeurs internes peuvent installer gratuitement une application normalement payante. Pour les tests fermés, **les testeurs doivent normalement acheter l'application payante** ; tenir compte de ce point avant l'invitation et décider du parcours d'essai avec le propriétaire. Les liens Play peuvent mettre plusieurs heures à être disponibles après une première publication de test, ce qui doit être signalé honnêtement.
+
+Google AI Studio peut produire le code et aider à la préparation, mais **n'a pas nécessairement accès à la Play Console, au keystore ou aux secrets**. Le workflow GitHub `.github/workflows/play-release.yml` doit être réutilisé, sans exposer de clé. Les dernières actions possibles sans identifiants doivent être exécutées, puis remettre au propriétaire les seules étapes restantes : activation éventuelle de la fiche, monétisation payante/prix, configuration des secrets GitHub/compte de service et vérification de l'inscription des testeurs. Ne pas pousser automatiquement en production publique.
+
 ## Plan de sortie sans collision
 1. Faire travailler Google AI Studio sur la branche de développement issue du dépôt existant, sans écrire directement sur `main`.
 2. Tests unitaires, e2e, offline et appareil ; respecter les chemins de compatibilité de l'ancien localStorage.
