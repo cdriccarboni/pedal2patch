@@ -3,6 +3,18 @@ name: Pedal2Patch Play Release
 on:
   workflow_dispatch:
     inputs:
+      approved_sha:
+        description: "SHA exact de main approuvé pour Google Play"
+        required: false
+        type: string
+      approved_version:
+        description: "VersionName exacte approuvée"
+        required: false
+        type: string
+      approved_version_code:
+        description: "VersionCode Android approuvé"
+        required: false
+        type: string
       publish_to_play:
         description: "Publier l'AAB signé sur Google Play"
         required: true
@@ -14,6 +26,10 @@ on:
         type: choice
         default: internal
         options: [internal, alpha, beta]
+
+concurrency:
+  group: pedal2patch-play-${{ inputs.publish_to_play && inputs.track || github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -28,6 +44,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Verify the exact authorized Play release
+        if: ${{ inputs.publish_to_play }}
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          APPROVED_VERSION: ${{ inputs.approved_version }}
+          APPROVED_CODE: ${{ inputs.approved_version_code }}
+          APPROVED_TRACK: ${{ inputs.track }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main" || { echo "::error::Only main may publish"; exit 1; }
+          [[ "$APPROVED_SHA" =~ ^[0-9a-f]{40}$ ]] && [ "$GITHUB_SHA" = "$APPROVED_SHA" ] || { echo "::error::Approved SHA mismatch"; exit 1; }
+          CURRENT_VERSION="$(node -p "require('./package.json').version")"
+          [ -n "$APPROVED_VERSION" ] && [ "$APPROVED_VERSION" = "$CURRENT_VERSION" ] || { echo "::error::Approved version mismatch"; exit 1; }
+          COMPUTED_CODE="$(node -p "const v=require('./package.json').version.split('.').map(Number); v[0]*10000+v[1]*100+v[2]")"
+          [ -n "$APPROVED_CODE" ] && [ "$APPROVED_CODE" = "$COMPUTED_CODE" ] || { echo "::error::Approved Android versionCode mismatch"; exit 1; }
+          case "$APPROVED_TRACK" in internal|alpha|beta) ;; *) echo "::error::Production requires a distinct authorization"; exit 1 ;; esac
+          grep -Fq 'fr.cedriccarboni.pedal2patch' capacitor.config.ts || { echo "::error::Package changed"; exit 1; }
+          echo "Approved SHA=$GITHUB_SHA version=$CURRENT_VERSION code=$COMPUTED_CODE track=$APPROVED_TRACK"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
